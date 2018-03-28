@@ -1,10 +1,473 @@
 ﻿<!DOCTYPE html>
 <html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sample App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+</head>
 <body>
 
-    <h1>TODO</h1>
+    <div id="app">
+        <nav class="navbar" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <h1 class="title navbar-item">
+                    {{ $l("app.title") }}
+                </h1>
+            </div>
+        </nav>
 
-    <p>Make a simple SPA here</p>
+        <div class="container" v-show="!showApp" >
+            <div class="notification">
+                <button v-show="!showApp" v-on:click="login" v-bind:class="{ 'is-loading': loading.loggingIn }" class="button is-primary">
+                    {{ $l("login") }}
+                </button>
+            </div>
+        </div>
+
+        
+
+        <div v-show="showApp" class="section">
+
+            <div class="tile is-ancestor">
+                <div class="tile is-4 is-vertical is-parent">
+                    <div class="tile is-child box">
+                        <p class="title">{{ $l("cars.add") }}</p>
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">{{ $l("cars.name") }}</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control is-expanded has-icons-left">
+                                        <input v-model="entities.cars.newItem.name" class="input" type="text" v-bind:placeholder="$l('cars.name')">
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-car"></i>
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">{{ $l("cars.make") }}</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control is-expanded has-icons-left">
+                                        <input v-model="entities.cars.newItem.make" class="input" type="text" v-bind:placeholder="$l('cars.make')">
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-industry"></i>
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">{{ $l("cars.wheels") }}</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control is-expanded has-icons-left">
+                                        <input v-model="entities.cars.newItem.wheels" class="input" type="number" v-bind:placeholder="$l('cars.wheels')">
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-circle"></i>
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">{{ $l("cars.built") }}</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control is-expanded has-icons-left">
+                                        <input v-model="entities.cars.newItem.built" class="input" type="date" v-bind:placeholder="$l('cars.built')">
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-calendar"></i>
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <!-- Left empty for spacing -->
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <button v-on:click="createCar" v-bind:class="{ 'is-loading': loading.createCar }" class="button is-primary">
+                                            {{ $l("cars.add") }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tile is-child box">
+                        <p class="title">{{ $l("cars.searchByMake") }}</p>
+
+                        <div class="field has-addons">
+                            <div class="control">
+                                <input v-model="entities.cars.makeToSearchBy" class="input" type="text" v-bind:placeholder="$l('cars.make')">
+                            </div>
+                            <div class="control">
+                                <a v-on:click="getCarByMake()" v-bind:class="{ 'is-loading': loading.getCarsByMake }" class="button is-info">
+                                    {{ $l("app.search") }}
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="tile is-parent">
+                    <div class="tile is-child box">
+                        <p class="title">{{ $l("cars.mycars") }}</p>
+                        <div v-if="entities.cars.list.length > 0">
+                            <car v-for="car in entities.cars.list" :data="{car}" :key="car.name" inline-template>
+                                <div class="card">
+                                    <header class="card-header">
+                                        <p class="card-header-title">
+                                            {{ name }}
+                                        </p>
+                                    </header>
+                                    <div class="card-content level">
+                                        <div class="level-item has-text-centered">
+                                            <div>
+                                                <p class="heading">Make</p>
+                                                <p class="title">{{ make }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="level-item has-text-centered">
+                                            <div>
+                                                <p class="heading">Wheels</p>
+                                                <p class="title">{{ wheels }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="level-item has-text-centered">
+                                            <div>
+                                                <p class="heading">Built</p>
+                                                <p class="title">{{ built }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </car>
+                            <button v-show="entities.cars.lastResponse.page < entities.cars.lastResponse.totalPages" v-on:click="getAllCars" v-bind:class="{ 'is-loading': loading.getAllCars }" class="button is-primary is-pulled-right">
+                                {{ $l("app.loadMore") }}
+                            </button>
+                        </div>
+                        <div v-else-if="loading.getAllCars">
+                            {{ $l("app.loadMore") }}
+                        </div>
+                        <div v-else>
+                            {{ $l("cars.noCars") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // ---------------------------------
+        // Localization
+        // ---------------------------------
+
+        var language = (window.navigator.userLanguage || window.navigator.language).split('-')[0].toLowerCase();
+
+        var locales = {
+
+            en: {
+                login: "Login",
+                app: {
+                    title: "Sample App",
+                    error: "An error has occurred",
+                    search: "Search",
+                    loading: "Loading...",
+                    loadMore: "Load more",
+                },
+                cars: {
+                    add: "Add car",
+                    mycars: "My cars",
+                    searchByMake: "Search car by make",
+                    make: "Make",
+                    name: "Name",
+                    wheels: "Wheels",
+                    built: "Built",
+                    noCars: "No cars found"
+                }
+            },
+            es: {
+                login: "Iniciar sesión",
+                app: {
+                    title: "Aplicación de prueba",
+                    error: "Ha ocurrido un error",
+                    search: "Buscar",
+                    loading: "Cargando...",
+                    loadMore: "Cargar más",
+                },
+                cars: {
+                    add: "Añadir auto",
+                    mycars: "Mis autos",
+                    searchByMake: "Buscar auto por marca",
+                    make: "Marca",
+                    name: "Nombre",
+                    wheels: "Ruedas",
+                    built: "Fabricación",
+                    noCars: "No se encontraron autos"
+                }
+            },
+            fr: {
+                login: "Se connecter",
+                app: {
+                    title: "Exemple d'application",
+                    error: "Une erreur est survenue",
+                    search: "Rechercher",
+                    loading: "Chargement...",
+                    loadMore: "Charger plus",
+                },
+                cars: {
+                    add: "Ajouter de la voiture",
+                    mycars: "Mes voitures",
+                    searchByMake: "Rechercher des voitures par marque",
+                    make: "Marque",
+                    name: "Nom",
+                    wheels: "Roues",
+                    built: "Fabrication",
+                    noCars: "Pas de voitures"
+                }
+            }
+        };
+
+        var currentLocale = locales[language] = locales[language] || locales['fr'];
+
+        Vue.prototype.$l = function (key) { 
+
+            var k = currentLocale;
+            var keys = key.split('.');
+
+            for (var i = 0; i < keys.length; i++) {
+                k = k[keys[i]];
+                if (!k) return key;
+            }
+
+            return k;
+        }
+
+        // ---------------------------------
+        // API definitions
+        // ---------------------------------
+
+        var api = {
+            prefix: "api/v1/",
+            endpoints: {
+                cars: {
+                    getAll: { name: "getAllCars", url: "cars?page={0}&limit={1}" },
+                    create: { name: "createCar", url: "cars" },
+                    getByMake: { name: "getCarsByMake", url: "cars/getbymake/{0}?page=1&limit=100" }
+                }
+            },
+            limit: 2,
+            loading: null,
+            buildUrl: function (url, args) {
+                var argumentsRegex = /\{\d*\}/;
+                var match;
+                do {
+                    match = argumentsRegex.exec(url);
+                    if (match) {
+
+                        var index = parseInt(match[0].replace("{", "").replace("}", ""));
+                        var replaceWith = args[index] || "";
+                        url = url.replace(match[0], replaceWith);
+                    }
+                } while (match);
+                return url;
+            },
+            showError: function (error) {
+                var errorCode = (error.response && error.response.data && error.response.data.code) ? error.response.data.code : "0";
+                var errorMessage = (error.response && error.response.data && error.response.data.description) ?
+                    error.response.data.description :
+                    currentLocale.app.error;
+                showErrorMessage("[" + errorCode + "] " + errorMessage);
+            },
+            get: function (endpoint) {
+
+                var args = [];
+                for (var i = 1; i < arguments.length; ++i) {
+                    args.push(arguments[i]);
+                }
+                return new Promise(function (resolve, reject) {
+
+                    var url = '';
+                    var isString = typeof endpoint === 'string';
+
+                    if (isString)
+                        url = endpoint;
+                    else {
+                        url = this.prefix + this.buildUrl(endpoint.url, args);
+                        this.loading[endpoint.name] = true;
+                    }
+
+                    axios.get(url).then(
+                        (response) => {
+                            if (!isString) this.loading[endpoint.name] = false;
+                            resolve(response);
+                        }
+                    ).catch(error => {
+                            if (!isString) this.loading[endpoint.name] = false;
+                            this.showError(error);
+                            reject(error);
+                    });
+                }.bind(this));
+            },
+            arrayContains: function (array, key, value) {
+
+                for (var i = 0; i < array.length; i++) {
+                    if (array[i][key] == value) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            getNextPage: function (entityType, options) {
+
+                options = options || {};
+                var url = options.url || api.endpoints[entityType].getAll;
+                var key = options.key || "id";
+                var pagingData = this.entities[entityType].lastResponse || {};
+                pagingData.page = pagingData.page || 0;
+                pagingData.limit = pagingData.limit || this.limit;
+
+                return this.get(url, pagingData.page + 1, pagingData.limit).then(response => {
+
+                    api.entities[entityType].lastResponse = response.data;
+                    for (var i = 0; i < response.data.results.length; i++) {
+
+                        if (!this.arrayContains(this.entities[entityType].list, key, response.data.results[i][key]))
+                            this.entities[entityType].list.push(response.data.results[i]);
+                    }
+
+                });
+               
+            },
+            post: function (endpoint, data) {
+
+                var args = [];
+                for (var i = 2; i < arguments.length; ++i) {
+                    args.push(arguments[i]);
+                }
+                return new Promise(function (resolve, reject) {
+
+                    var url = this.buildUrl(endpoint.url, args);
+
+                    this.loading[endpoint.name] = true;
+
+                    axios.post(this.prefix + url, data).then(
+                        (response) => {
+                            this.loading[endpoint.name] = false;
+                            resolve(response);
+                        }
+                    ).catch(error => {
+                        this.loading[endpoint.name] = false;
+                        this.showError(error);
+                        reject(error);
+                    });
+                }.bind(this));
+            },
+            postEntity: function (entityType) {
+
+                this.post(api.endpoints[entityType].create, this.entities[entityType].newItem).then(response => {
+                    this.entities[entityType].list.push(this.entities[entityType].newItem);
+                    this.entities[entityType].newItem = {};
+                });
+            }
+
+        };
+
+        // ---------------------------------
+        // Car component
+        // ---------------------------------
+
+        var carComponent = Vue.component('car', {
+            props: {
+                data: {
+                    type: Object
+                }
+            },
+            data: function () {
+                return this.data.car;
+            }
+        });
+
+        // ---------------------------------
+        // VUE View Model
+        // ---------------------------------
+
+        var vm = new Vue({
+
+            el: '#app',
+            data: {
+                showApp: false,
+                loading: {
+                    loggingIn: false,
+                    getAllCars: false,
+                    createCar: false,
+                    getCarsByMake: false,
+                },
+                entities: {
+                    cars: {
+                        makeToSearchBy: "",
+                        list: [],
+                        newItem: {},
+                        lastResponse: {}
+                    }
+                }
+            },
+            methods: {
+                login: function () {
+                    this.loading.loggingIn = true;
+                    api.get("/login").then(response => {
+                        this.showApp = true;
+                        vm.getAllCars();
+                    });
+                },
+                getCarByMake: function () {
+
+                    api.get(api.endpoints.cars.getByMake, this.entities.cars.makeToSearchBy).then(response => {
+                        this.entities.cars.lastResponse = response.data;
+                        this.entities.cars.list = response.data.results;
+                    });
+                },
+                createCar: function () { api.postEntity("cars"); },
+                getAllCars: function () { api.getNextPage("cars", { key: "name" }); }
+            }
+        });
+
+        api.loading = vm.loading;
+        api.entities = vm.entities;
+
+        
+
+        // ---------------------------------
+        // Utilities
+        // ---------------------------------
+
+        var showErrorMessage = function (message) {
+            alert(message);
+        }
+
+    </script>
 
 </body>
 </html>

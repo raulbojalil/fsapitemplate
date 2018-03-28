@@ -139,6 +139,8 @@ type PagedResults(data:IEnumerable<'T>, paging:PagingRequest) =
     member this.total with get() = data.Count()
     member this.results with get() = data.Skip(_page*paging.limit).Take(paging.limit)
     member this.page with get() = _page + 1
+    member this.limit with get() = paging.limit
+    member this.totalPages with get() = Math.Ceiling(float(this.total) / float(this.limit))
 
 // ---------------------------------
 // Data access
@@ -212,11 +214,15 @@ let webApp =
                         GET >=> 
                         choose [
                             route  "/cars" >=> (fun next ctx -> Successful.OK (new PagedResults(_cars, ctx.BindQueryString<PagingRequest>())) next ctx)
-                            routef "/cars/getbymake/%s" (fun make -> json (query {
+                            routef "/cars/getbymake/%s" (fun (make) next ctx -> Successful.OK (new PagedResults((query {
                                                                                 for car in _cars do
                                                                                 where (car.Make = make)
                                                                                 select car
-                                                                            }))
+                                                                            }), ctx.BindQueryString<PagingRequest>())) next ctx)
+            
+            
+            
+
                         ]
                         POST >=> 
                         choose [
